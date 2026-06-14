@@ -185,8 +185,24 @@ export async function updateMember(id: string, data: Record<string, string>) {
 
 export async function deleteMember(id: string) {
   await requireAuth("ADMIN");
+  const member = await prisma.member.findUnique({
+    where: { id },
+    include: {
+      _count: { select: { expenses: true, volunteerDuties: true, recoveries: true } },
+    },
+  });
+  if (!member) return { error: "Member not found" };
+  const linked =
+    member._count.expenses + member._count.volunteerDuties + member._count.recoveries;
+  if (linked > 0) {
+    return {
+      error:
+        "Cannot delete member — linked to expenses, volunteer duties, or recovery records.",
+    };
+  }
   await prisma.member.delete({ where: { id } });
   revalidatePath("/dashboard/members");
+  return { success: true };
 }
 
 // Documents
@@ -278,8 +294,19 @@ export async function updateSociety(id: string, data: Record<string, string>) {
 
 export async function deleteSociety(id: string) {
   await requireAuth("ADMIN");
+  const society = await prisma.society.findUnique({
+    where: { id },
+    include: { _count: { select: { donators: true } } },
+  });
+  if (!society) return { error: "Society not found" };
+  if (society._count.donators > 0) {
+    return {
+      error: `Cannot delete society — ${society._count.donators} donator(s) linked to it.`,
+    };
+  }
   await prisma.society.delete({ where: { id } });
   revalidatePath("/dashboard/societies");
+  return { success: true };
 }
 
 // Donators
@@ -290,6 +317,8 @@ export async function createDonator(data: Record<string, string>, yearId?: strin
     data: {
       name: data.name,
       mobile: data.mobile || null,
+      wing: data.wing || null,
+      flatNo: data.flatNo || null,
       expectedAmount: data.expectedAmount
         ? parseFloat(data.expectedAmount)
         : null,
@@ -310,6 +339,8 @@ export async function updateDonator(id: string, data: Record<string, string>) {
     data: {
       name: data.name,
       mobile: data.mobile || null,
+      wing: data.wing || null,
+      flatNo: data.flatNo || null,
       expectedAmount: data.expectedAmount
         ? parseFloat(data.expectedAmount)
         : null,
@@ -323,8 +354,26 @@ export async function updateDonator(id: string, data: Record<string, string>) {
 
 export async function deleteDonator(id: string) {
   await requireAuth("ADMIN");
+  const donator = await prisma.donator.findUnique({
+    where: { id },
+    include: {
+      _count: { select: { collections: true, exceptions: true, recoveries: true } },
+    },
+  });
+  if (!donator) return { error: "Donator not found" };
+  if (donator._count.collections > 0) {
+    return {
+      error: `Cannot delete donator — ${donator._count.collections} payment(s) recorded. Remove payments first.`,
+    };
+  }
+  if (donator._count.exceptions > 0 || donator._count.recoveries > 0) {
+    return {
+      error: "Cannot delete donator — linked to exceptions or recovery records.",
+    };
+  }
   await prisma.donator.delete({ where: { id } });
   revalidatePath("/dashboard/donators");
+  return { success: true };
 }
 
 // Collections
@@ -338,6 +387,9 @@ export async function createCollection(data: Record<string, string>, yearId?: st
       data: {
         name: data.newDonatorName,
         mobile: data.newDonatorMobile || null,
+        wing: data.newDonatorWing || null,
+        flatNo: data.newDonatorFlatNo || null,
+        societyId: data.newDonatorSocietyId || null,
         expectedAmount: data.newDonatorExpected
           ? parseFloat(data.newDonatorExpected)
           : null,
@@ -390,7 +442,7 @@ export async function createCollection(data: Record<string, string>, yearId?: st
     },
   });
   revalidatePath("/dashboard/collections");
-  revalidatePath("/dashboard/balance");
+  revalidatePath("/dashboard/recovery");
   revalidatePath("/dashboard");
 }
 
@@ -433,7 +485,7 @@ export async function updateCollection(id: string, data: Record<string, string>)
     },
   });
   revalidatePath("/dashboard/collections");
-  revalidatePath("/dashboard/balance");
+  revalidatePath("/dashboard/recovery");
   revalidatePath("/dashboard");
 }
 
@@ -441,8 +493,102 @@ export async function deleteCollection(id: string) {
   await requireAuth("ADMIN");
   await prisma.collection.delete({ where: { id } });
   revalidatePath("/dashboard/collections");
-  revalidatePath("/dashboard/balance");
+  revalidatePath("/dashboard/recovery");
   revalidatePath("/dashboard");
+  return { success: true };
+}
+
+// Recovery — field collection of pending balances
+export async function createRecovery(data: Record<string, string>, yearId?: string) {
+  await requireAuth("ADMIN");
+  const managementYearId = await getYearId(yearId);
+  const donatorId = data.donatorId;
+  const amount = parseFloat(data.amount);
+  const date = data.date;
+
+  if (!donatorId || isNaN(amount) || amount <= 0) {
+    return { error: "Invalid recovery amount or donator." };
+  }
+
+  const collections = await prisma.collection.findMany({
+    where: { donatorId, managementYearId },
+    include: { donator: true },
+  });
+  const grouped = groupCollectionsByDonator(collections as CollectionRow[]);
+  const group = grouped.find((g) => g.donatorId === donatorId);
+
+  if (!group || !group.hasPending) {
+    return { error: "This donator has no pending recovery balance." };
+  }
+  if (amount > group.balancePending) {
+    return {
+      error: `Recovery amount cannot exceed pending balance of ₹${group.balancePending.toLocaleString("en-IN")}.`,
+    };
+  }
+
+  const donator = await prisma.donator.findUnique({ where: { id: donatorId } });
+  const totalPaidBefore = await getDonatorTotalPaid(donatorId, managementYearId);
+  const hasExpected =
+    donator?.expectedAmount != null && donator.expectedAmount > 0;
+  const { paymentStatus, balanceAmount } = calculatePaymentBalance(
+    donator?.expectedAmount,
+    totalPaidBefore,
+    amount,
+    0,
+    !hasExpected
+  );
+
+  await prisma.collection.updateMany({
+    where: {
+      donatorId,
+      managementYearId,
+      paymentStatus: "PENDING",
+    },
+    data: { paymentStatus: "FULL", balanceAmount: 0 },
+  });
+
+  const collection = await prisma.collection.create({
+    data: {
+      amount,
+      date,
+      paymentStatus,
+      balanceAmount,
+      donatorId,
+      managementYearId,
+    },
+  });
+
+  let recoveredByName = data.recoveredByName || null;
+  const recoveredByMemberId = data.recoveredByMemberId || null;
+  if (recoveredByMemberId) {
+    const member = await prisma.member.findUnique({
+      where: { id: recoveredByMemberId },
+    });
+    if (member) recoveredByName = member.name;
+  }
+
+  if (!recoveredByMemberId && !recoveredByName?.trim()) {
+    return { error: "Please select or enter who recovered the amount." };
+  }
+
+  await prisma.recovery.create({
+    data: {
+      amount,
+      date,
+      donatorId,
+      recoveredByMemberId: recoveredByMemberId || null,
+      recoveredByName,
+      collectionId: collection.id,
+      notes: data.notes || null,
+      managementYearId,
+    },
+  });
+
+  revalidatePath("/dashboard/recovery");
+  revalidatePath("/dashboard/collections");
+  revalidatePath("/dashboard/reports");
+  revalidatePath("/dashboard");
+  return { success: true };
 }
 
 // Exceptions
@@ -975,7 +1121,7 @@ export async function approvePaymentSubmission(id: string) {
 
   revalidatePath("/dashboard/payment-approvals");
   revalidatePath("/dashboard/collections");
-  revalidatePath("/dashboard/balance");
+  revalidatePath("/dashboard/recovery");
   revalidatePath("/dashboard/my-payments");
   revalidatePath("/dashboard");
 }

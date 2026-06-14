@@ -41,7 +41,7 @@ export function GroupedCollectionsList({
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-semibold text-lg">{group.donatorName}</h3>
                   {group.hasPending ? (
-                    <Badge variant="warning">Balance Pending</Badge>
+                    <Badge variant="warning">Recovery Pending</Badge>
                   ) : (
                     <Badge variant="success">Paid Full</Badge>
                   )}

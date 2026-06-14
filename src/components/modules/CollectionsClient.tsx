@@ -7,16 +7,20 @@ import {
   groupCollectionsByDonator,
   sumTotalCollected,
 } from "@/lib/collection-utils";
-import { Button, Input, Modal, EmptyState, Select } from "@/components/ui";
+import { Button, Input, Modal, EmptyState, Select, ConfirmDialog } from "@/components/ui";
 import { GroupedCollectionsList } from "@/components/modules/GroupedCollectionsList";
 import { formatCurrency } from "@/lib/utils";
 import { Plus, Search, IndianRupee } from "lucide-react";
 
+type Society = { id: string; buildingName: string };
 type DonatorInfo = {
   id: string;
   name: string;
   expectedAmount: number | null;
   totalPaid: number;
+  societyName?: string | null;
+  wing?: string | null;
+  flatNo?: string | null;
 };
 type Collection = {
   id: string;
@@ -31,10 +35,12 @@ type Collection = {
 export function CollectionsClient({
   collections,
   donators,
+  societies,
   isAdmin,
 }: {
   collections: Collection[];
   donators: DonatorInfo[];
+  societies: Society[];
   isAdmin: boolean;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
@@ -46,6 +52,8 @@ export function CollectionsClient({
   const [showNewDonator, setShowNewDonator] = useState(false);
   const [listSearch, setListSearch] = useState("");
   const [amountInput, setAmountInput] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const grouped = useMemo(
     () => groupCollectionsByDonator(collections),
@@ -83,9 +91,7 @@ export function CollectionsClient({
       ? activeDonator.totalPaid - (editing?.amount || 0)
       : activeDonator.totalPaid;
     const manual =
-      !hasExpected && paymentStatus === "PENDING"
-        ? undefined
-        : 0;
+      !hasExpected && paymentStatus === "PENDING" ? undefined : 0;
     return calculatePaymentBalance(
       activeDonator.expectedAmount,
       totalBefore,
@@ -116,6 +122,14 @@ export function CollectionsClient({
     setSelectedDonator("");
     setShowNewDonator(false);
     setAmountInput("");
+  }
+
+  async function handleDelete() {
+    if (!confirmDeleteId) return;
+    setDeleteLoading(true);
+    await deleteCollection(confirmDeleteId);
+    setConfirmDeleteId(null);
+    setDeleteLoading(false);
   }
 
   function openEdit(paymentId: string) {
@@ -157,19 +171,14 @@ export function CollectionsClient({
           <IndianRupee size={20} />
           <span className="text-sm font-medium">Total Collection (This Year)</span>
         </div>
-        <p className="text-3xl font-bold text-gray-800">
-          {formatCurrency(totalCollected)}
-        </p>
+        <p className="text-3xl font-bold text-gray-800">{formatCurrency(totalCollected)}</p>
         <p className="text-xs text-gray-400 mt-1">
           {grouped.length} donators &middot; {collections.length} payments
         </p>
       </div>
 
       <div className="relative mb-4">
-        <Search
-          size={18}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-        />
+        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           className="input-field pl-10"
           placeholder="Search donator by name..."
@@ -187,7 +196,7 @@ export function CollectionsClient({
           groups={filteredGroups}
           isAdmin={isAdmin}
           onEdit={(id) => openEdit(id)}
-          onDelete={(id) => deleteCollection(id)}
+          onDelete={(id) => setConfirmDeleteId(id)}
         />
       )}
 
@@ -199,7 +208,7 @@ export function CollectionsClient({
         <form onSubmit={handleSubmit} className="space-y-4">
           {!editing && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-semibold text-gray-700">
                 Donator Name
               </label>
               <input
@@ -213,7 +222,7 @@ export function CollectionsClient({
                 }}
               />
               {donatorSearch && !showNewDonator && (
-                <div className="border rounded-lg max-h-36 overflow-y-auto">
+                <div className="border rounded-xl max-h-36 overflow-y-auto">
                   {filteredDonators.map((d) => (
                     <button
                       key={d.id}
@@ -227,6 +236,7 @@ export function CollectionsClient({
                       }}
                     >
                       {d.name}
+                      {d.societyName && ` · ${d.societyName}`}
                       {d.expectedAmount
                         ? ` · Vargani ${formatCurrency(d.expectedAmount)}`
                         : ""}
@@ -245,12 +255,24 @@ export function CollectionsClient({
               )}
               {showNewDonator && (
                 <>
+                  <Select label="Society (optional)" name="newDonatorSocietyId" defaultValue="">
+                    <option value="">Select Society</option>
+                    {societies.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.buildingName}
+                      </option>
+                    ))}
+                  </Select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input label="Wing (optional)" name="newDonatorWing" placeholder="e.g. A" />
+                    <Input label="Flat No (optional)" name="newDonatorFlatNo" placeholder="e.g. 101" />
+                  </div>
                   <Input label="Mobile (optional)" name="newDonatorMobile" type="tel" />
                   <Input
                     label="Expected Vargani (optional)"
                     name="newDonatorExpected"
                     type="number"
-                    placeholder="e.g. 5000 — balance auto-calculated"
+                    placeholder="e.g. 5000"
                   />
                 </>
               )}
@@ -258,19 +280,15 @@ export function CollectionsClient({
           )}
 
           {editing && (
-            <p className="text-sm text-gray-500 bg-mandal-cream p-3 rounded-lg">
+            <p className="text-sm text-gray-500 bg-mandal-cream p-3 rounded-xl">
               Editing payment for <strong>{editing.donator.name}</strong>
-              {hasExpected && (
-                <span className="block text-xs mt-1">
-                  Expected vargani: {formatCurrency(activeDonator!.expectedAmount!)}
-                </span>
-              )}
             </p>
           )}
 
           {selectedDonatorInfo?.expectedAmount && !editing && (
-            <p className="text-sm bg-mandal-cream p-3 rounded-lg text-mandal-maroon">
-              Expected vargani: <strong>{formatCurrency(selectedDonatorInfo.expectedAmount)}</strong>
+            <p className="text-sm bg-mandal-cream p-3 rounded-xl text-mandal-maroon">
+              Expected vargani:{" "}
+              <strong>{formatCurrency(selectedDonatorInfo.expectedAmount)}</strong>
               {" · "}Already paid: {formatCurrency(selectedDonatorInfo.totalPaid)}
             </p>
           )}
@@ -285,14 +303,13 @@ export function CollectionsClient({
           />
 
           {hasExpected && previewBalance && (
-            <div className="p-3 bg-green-50 rounded-lg text-sm">
+            <div className="p-3 bg-green-50 rounded-xl text-sm">
               <p>
                 Remaining balance after this payment:{" "}
                 <strong className="text-amber-600">
                   {formatCurrency(previewBalance.balanceAmount)}
                 </strong>
               </p>
-              <p className="text-xs text-gray-500 mt-1">Auto-calculated from expected vargani</p>
             </div>
           )}
 
@@ -313,7 +330,6 @@ export function CollectionsClient({
                   type="number"
                   required
                   defaultValue={editing?.balanceAmount}
-                  placeholder="For fresh donators without expected vargani"
                 />
               )}
             </>
@@ -332,6 +348,15 @@ export function CollectionsClient({
           </Button>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Delete Payment?"
+        message="Are you sure you want to delete this collection entry? This cannot be undone."
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+        loading={deleteLoading}
+      />
     </div>
   );
 }

@@ -10,7 +10,7 @@ import {
   Building2,
   Heart,
   IndianRupee,
-  Scale,
+  HandCoins,
   AlertTriangle,
   Receipt,
   Calendar,
@@ -27,6 +27,7 @@ import {
   UserCog,
   ClipboardCheck,
   BadgeCheck,
+  FileBarChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -61,11 +62,17 @@ const adminNavSections: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard/payment-approvals", label: "Payment Approvals", icon: ClipboardCheck },
       { href: "/dashboard/collections", label: "Collections", icon: IndianRupee },
-      { href: "/dashboard/balance", label: "Balance", icon: Scale },
+      { href: "/dashboard/recovery", label: "Recovery", icon: HandCoins },
       { href: "/dashboard/expenses", label: "Expenses", icon: Receipt },
       { href: "/dashboard/budget", label: "Budget", icon: PiggyBank },
       { href: "/dashboard/exceptions", label: "Exceptions", icon: AlertTriangle },
       { href: "/dashboard/qr-donations", label: "QR Donations", icon: QrCode },
+    ],
+  },
+  {
+    label: "Reports",
+    items: [
+      { href: "/dashboard/reports", label: "Reports & Export", icon: FileBarChart },
     ],
   },
   {

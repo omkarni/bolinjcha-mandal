@@ -88,6 +88,7 @@ model ManagementYear {
   inventoryItems   InventoryItem[]
   activities       Activity[]
   paymentSubmissions PaymentSubmission[]
+  recoveries         Recovery[]
 }
 
 model Member {
@@ -110,6 +111,7 @@ model Member {
 
   expenses Expense[]
   volunteerDuties VolunteerDuty[]
+  recoveries Recovery[]
 }
 
 model MandalDocument {
@@ -152,6 +154,8 @@ model Donator {
   id               String   @id @default(cuid())
   name             String
   mobile           String?
+  wing             String?
+  flatNo           String?
   expectedAmount   Float?
   referredBy       String?
   societyId        String?
@@ -163,6 +167,7 @@ model Donator {
 
   collections Collection[]
   exceptions  DonatorException[]
+  recoveries  Recovery[]
 }
 
 model Collection {
@@ -333,4 +338,20 @@ model PaymentSubmission {
   managementYear   ManagementYear   @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+}
+
+model Recovery {
+  id                  String   @id @default(cuid())
+  amount              Float
+  date                String
+  donatorId           String
+  donator             Donator  @relation(fields: [donatorId], references: [id])
+  recoveredByMemberId String?
+  recoveredByMember   Member?  @relation(fields: [recoveredByMemberId], references: [id])
+  recoveredByName     String?
+  collectionId        String?
+  notes               String?
+  managementYearId    String
+  managementYear      ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt           DateTime @default(now())
 }

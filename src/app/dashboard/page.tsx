@@ -6,10 +6,10 @@ import {
   IndianRupee,
   Receipt,
   Wallet,
-  AlertCircle,
   Users,
   Heart,
   Building2,
+  HandCoins,
   ArrowUpRight,
   Sparkles,
 } from "lucide-react";
@@ -72,12 +72,12 @@ export default async function DashboardPage() {
       href: "/dashboard/expenses",
     },
     {
-      label: "Pending Balance",
+      label: "Recovery Pending",
       value: formatCurrency(summary.totalPending),
-      icon: AlertCircle,
+      icon: HandCoins,
       color: "from-amber-500 to-orange-500",
       bg: "bg-amber-50",
-      href: "/dashboard/balance",
+      href: "/dashboard/recovery",
     },
   ];
 
@@ -176,7 +176,7 @@ export default async function DashboardPage() {
             { label: "Payment Approvals", href: "/dashboard/payment-approvals" },
             { label: "Approve Users", href: "/dashboard/users" },
             { label: "Add Donator", href: "/dashboard/donators" },
-            { label: "View Balance", href: "/dashboard/balance" },
+            { label: "View Recovery", href: "/dashboard/recovery" },
           ].map((action) => (
             <Link key={action.label} href={action.href} className="quick-action-btn">
               {action.label}

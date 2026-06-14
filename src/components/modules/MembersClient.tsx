@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createMember, updateMember, deleteMember } from "@/lib/actions";
-import { Button, Input, Modal, EmptyState, Textarea } from "@/components/ui";
+import { Button, Input, Modal, EmptyState, Textarea, ConfirmDialog, InfoDialog } from "@/components/ui";
 import { Plus, Pencil, Trash2, Phone, MapPin } from "lucide-react";
 
 type Member = {
@@ -13,6 +13,9 @@ type Member = {
   mobile: string | null;
   address: string | null;
   profilePic: string | null;
+  linkedCount: number;
+  expenseCount: number;
+  recoveryCount: number;
 };
 
 export function MembersClient({
@@ -25,6 +28,26 @@ export function MembersClient({
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<Member | null>(null);
+  const [blockedDelete, setBlockedDelete] = useState<Member | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  function handleDeleteClick(m: Member) {
+    if (m.linkedCount > 0) {
+      setBlockedDelete(m);
+      return;
+    }
+    setConfirmDelete(m);
+  }
+
+  function blockedMessage(m: Member) {
+    const parts: string[] = [];
+    if (m.expenseCount > 0) parts.push(`${m.expenseCount} expense(s)`);
+    if (m.recoveryCount > 0) parts.push(`${m.recoveryCount} recovery record(s)`);
+    const extra = m.linkedCount - m.expenseCount - m.recoveryCount;
+    if (extra > 0) parts.push(`${extra} volunteer duty record(s)`);
+    return `"${m.name}" is linked to ${parts.join(", ")}. Remove those records first before deleting this member.`;
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,6 +59,19 @@ export function MembersClient({
     setModalOpen(false);
     setEditing(null);
     setLoading(false);
+  }
+
+  async function handleDelete() {
+    if (!confirmDelete) return;
+    setDeleteLoading(true);
+    const result = await deleteMember(confirmDelete.id);
+    if (result.error) {
+      setConfirmDelete(null);
+      setBlockedDelete(confirmDelete);
+    } else {
+      setConfirmDelete(null);
+    }
+    setDeleteLoading(false);
   }
 
   return (
@@ -74,7 +110,7 @@ export function MembersClient({
                   )}
                 </div>
                 {isAdmin && (
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1">
                     <button
                       onClick={() => { setEditing(m); setModalOpen(true); }}
                       className="p-1.5 hover:bg-gray-100 rounded"
@@ -82,7 +118,7 @@ export function MembersClient({
                       <Pencil size={14} />
                     </button>
                     <button
-                      onClick={() => deleteMember(m.id)}
+                      onClick={() => handleDeleteClick(m)}
                       className="p-1.5 hover:bg-red-50 text-red-500 rounded"
                     >
                       <Trash2 size={14} />
@@ -112,6 +148,22 @@ export function MembersClient({
           </Button>
         </form>
       </Modal>
+
+      <InfoDialog
+        open={!!blockedDelete}
+        title="Cannot Delete Member"
+        message={blockedDelete ? blockedMessage(blockedDelete) : ""}
+        onClose={() => setBlockedDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Member?"
+        message={`Are you sure you want to delete "${confirmDelete?.name}"? This action cannot be undone.`}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+        loading={deleteLoading}
+      />
     </div>
   );
 }

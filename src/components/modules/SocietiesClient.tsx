@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createSociety, updateSociety, deleteSociety } from "@/lib/actions";
-import { Button, Input, Modal, EmptyState, Textarea } from "@/components/ui";
+import { Button, Input, Modal, EmptyState, Textarea, ConfirmDialog } from "@/components/ui";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 type Society = {
@@ -24,6 +24,9 @@ export function SocietiesClient({
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Society | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<Society | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,6 +40,16 @@ export function SocietiesClient({
     setLoading(false);
   }
 
+  async function handleDelete() {
+    if (!confirmDelete) return;
+    setDeleteLoading(true);
+    setDeleteError("");
+    const result = await deleteSociety(confirmDelete.id);
+    if (result.error) setDeleteError(result.error);
+    else setConfirmDelete(null);
+    setDeleteLoading(false);
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -47,6 +60,12 @@ export function SocietiesClient({
           </Button>
         )}
       </div>
+
+      {deleteError && (
+        <div className="mb-4 text-red-600 text-sm bg-red-50 border border-red-100 p-3 rounded-xl">
+          {deleteError}
+        </div>
+      )}
 
       {societies.length === 0 ? (
         <EmptyState message="No societies added yet" />
@@ -71,7 +90,7 @@ export function SocietiesClient({
                     <Pencil size={16} />
                   </button>
                   <button
-                    onClick={() => deleteSociety(s.id)}
+                    onClick={() => { setDeleteError(""); setConfirmDelete(s); }}
                     className="p-2 hover:bg-red-50 text-red-500 rounded-lg"
                   >
                     <Trash2 size={16} />
@@ -104,6 +123,15 @@ export function SocietiesClient({
           </Button>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Society?"
+        message={`Delete "${confirmDelete?.buildingName}"? Societies with linked donators cannot be deleted.`}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+        loading={deleteLoading}
+      />
     </div>
   );
 }

@@ -259,3 +259,77 @@ export function SearchableSelect({
     </div>
   );
 }
+
+export function InfoDialog({
+  open,
+  title,
+  message,
+  onClose,
+  buttonLabel = "OK",
+}: {
+  open: boolean;
+  title: string;
+  message: string;
+  onClose: () => void;
+  buttonLabel?: string;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-mandal-maroon-deep/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 animate-slide-up">
+        <h3 className="text-lg font-display font-semibold text-mandal-maroon">{title}</h3>
+        <p className="text-gray-600 mt-2 text-sm leading-relaxed">{message}</p>
+        <Button className="w-full mt-6" onClick={onClose}>
+          {buttonLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel = "Delete",
+  cancelLabel = "Cancel",
+  variant = "danger",
+  onConfirm,
+  onCancel,
+  loading = false,
+}: {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: "danger" | "primary";
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading?: boolean;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-mandal-maroon-deep/50 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 animate-slide-up">
+        <h3 className="text-lg font-display font-semibold text-mandal-maroon">{title}</h3>
+        <p className="text-gray-600 mt-2 text-sm leading-relaxed">{message}</p>
+        <div className="flex gap-3 mt-6">
+          <Button variant="secondary" className="flex-1" onClick={onCancel} disabled={loading}>
+            {cancelLabel}
+          </Button>
+          <Button
+            variant={variant === "danger" ? "danger" : "primary"}
+            className="flex-1"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? "Please wait..." : confirmLabel}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
