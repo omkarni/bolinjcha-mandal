@@ -1,0 +1,1 @@
+export const MEMBERSHIP_FEE_AMOUNT = 700;

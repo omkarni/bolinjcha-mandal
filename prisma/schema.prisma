@@ -1,0 +1,336 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum PaymentStatus {
+  FULL
+  PENDING
+}
+
+enum EventType {
+  AARTI
+  VISARJAN
+  CULTURAL
+  POOJA
+  OTHER
+}
+
+enum BudgetStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum InventoryCategory {
+  POOJA_SAMAGRI
+  DECORATION
+  ELECTRICAL
+  OTHER
+}
+
+enum ActivityStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String
+  mobile     String?
+  role       Role     @default(USER)
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  paymentSubmissions PaymentSubmission[]
+}
+
+model ManagementYear {
+  id        String   @id @default(cuid())
+  year      String   @unique
+  label     String
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  members      Member[]
+  documents    MandalDocument[]
+  sponsors     Sponsor[]
+  societies    Society[]
+  donators     Donator[]
+  collections  Collection[]
+  exceptions   DonatorException[]
+  expenses     Expense[]
+  events       Event[]
+  volunteers   Volunteer[]
+  volunteerDuties VolunteerDuty[]
+  budgetCategories BudgetCategory[]
+  budgetRequests   BudgetRequest[]
+  qrDonations      QrDonation[]
+  inventoryItems   InventoryItem[]
+  activities       Activity[]
+  paymentSubmissions PaymentSubmission[]
+}
+
+model Member {
+  id             String   @id @default(cuid())
+  name           String
+  designation    String
+  dob            String?
+  mobile         String?
+  address        String?
+  profilePic     String?
+  documents      String?
+  managementYearId String
+  managementYear ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  membershipFeePaid     Boolean  @default(false)
+  membershipFeePaidDate String?
+  membershipFeeAmount   Float    @default(700)
+
+  expenses Expense[]
+  volunteerDuties VolunteerDuty[]
+}
+
+model MandalDocument {
+  id               String   @id @default(cuid())
+  name             String
+  fileUrl          String
+  fileType         String?
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+}
+
+model Sponsor {
+  id               String   @id @default(cuid())
+  name             String
+  address          String?
+  mobile           String?
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Society {
+  id               String   @id @default(cuid())
+  buildingName     String
+  address          String?
+  secretary        String?
+  chairman         String?
+  totalFlats       Int?
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  donators Donator[]
+}
+
+model Donator {
+  id               String   @id @default(cuid())
+  name             String
+  mobile           String?
+  expectedAmount   Float?
+  referredBy       String?
+  societyId        String?
+  society          Society? @relation(fields: [societyId], references: [id])
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  collections Collection[]
+  exceptions  DonatorException[]
+}
+
+model Collection {
+  id               String        @id @default(cuid())
+  amount           Float
+  date             String
+  paymentStatus    PaymentStatus @default(FULL)
+  balanceAmount    Float         @default(0)
+  donatorId        String
+  donator          Donator       @relation(fields: [donatorId], references: [id])
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model DonatorException {
+  id               String   @id @default(cuid())
+  reason           String
+  amount           Float?
+  donatorId        String
+  donator          Donator  @relation(fields: [donatorId], references: [id])
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+}
+
+model Expense {
+  id               String   @id @default(cuid())
+  name             String
+  amount           Float
+  date             String
+  memberId         String?
+  member           Member?  @relation(fields: [memberId], references: [id])
+  doneByName       String?
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+}
+
+model Event {
+  id               String    @id @default(cuid())
+  title            String
+  eventType        EventType @default(OTHER)
+  date             String
+  time             String?
+  location         String?
+  description      String?
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Volunteer {
+  id               String   @id @default(cuid())
+  name             String
+  mobile           String?
+  memberId         String?
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  duties VolunteerDuty[]
+}
+
+model VolunteerDuty {
+  id               String   @id @default(cuid())
+  dutyTitle        String
+  date             String
+  shiftStart       String?
+  shiftEnd         String?
+  location         String?
+  notes            String?
+  volunteerId      String
+  volunteer        Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  memberId         String?
+  member           Member?  @relation(fields: [memberId], references: [id])
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model BudgetCategory {
+  id               String   @id @default(cuid())
+  name             String
+  allocatedAmount  Float
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  requests BudgetRequest[]
+}
+
+model BudgetRequest {
+  id               String       @id @default(cuid())
+  requestedAmount  Float
+  reason           String
+  status           BudgetStatus @default(PENDING)
+  requestedBy      String?
+  reviewedBy       String?
+  reviewNote       String?
+  categoryId       String
+  category         BudgetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model QrDonation {
+  id               String   @id @default(cuid())
+  title            String
+  imageUrl         String
+  upiId            String?
+  isActive         Boolean  @default(true)
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model InventoryItem {
+  id               String            @id @default(cuid())
+  name             String
+  category         InventoryCategory @default(OTHER)
+  quantity         Float
+  unit             String            @default("pcs")
+  notes            String?
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Activity {
+  id               String         @id @default(cuid())
+  name             String
+  date             String
+  location         String?
+  description      String?
+  status           ActivityStatus @default(PLANNED)
+  results          String?
+  managementYearId String
+  managementYear   ManagementYear @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model PaymentSubmission {
+  id               String           @id @default(cuid())
+  amount           Float
+  date             String
+  paymentStatus    PaymentStatus    @default(FULL)
+  balanceAmount    Float            @default(0)
+  screenshotUrl    String
+  notes            String?
+  status           SubmissionStatus @default(PENDING)
+  rejectReason     String?
+  reviewedBy       String?
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectionId     String?
+  managementYearId String
+  managementYear   ManagementYear   @relation(fields: [managementYearId], references: [id], onDelete: Cascade)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
