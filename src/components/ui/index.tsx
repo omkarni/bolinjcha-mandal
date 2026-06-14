@@ -1,8 +1,8 @@
 "use client";
 
+import React, { type ReactNode, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
 
 export function Button({
   children,
@@ -34,12 +34,12 @@ export function Input({
   error?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <label className="block text-sm font-semibold text-gray-700">{label}</label>
       )}
       <input className={cn("input-field", className)} {...props} />
-      {error && <p className="text-red-500 text-xs">{error}</p>}
+      {error && <p className="text-red-500 text-xs font-medium">{error}</p>}
     </div>
   );
 }
@@ -51,9 +51,9 @@ export function Select({
   ...props
 }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <label className="block text-sm font-semibold text-gray-700">{label}</label>
       )}
       <select className={cn("input-field", className)} {...props}>
         {children}
@@ -68,9 +68,9 @@ export function Textarea({
   ...props
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <label className="block text-sm font-semibold text-gray-700">{label}</label>
       )}
       <textarea
         className={cn("input-field min-h-[80px] resize-y", className)}
@@ -102,19 +102,24 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl mx-0 sm:mx-4">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between rounded-t-2xl">
-          <h3 className="text-lg font-semibold text-mandal-maroon">{title}</h3>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div
+        className="absolute inset-0 bg-mandal-maroon-deep/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-slide-up">
+        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+          <h3 className="text-lg font-display font-semibold text-mandal-maroon">
+            {title}
+          </h3>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-mandal-cream rounded-xl transition-colors text-gray-500"
           >
             <X size={20} />
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
@@ -122,8 +127,11 @@ export function Modal({
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="text-center py-12 text-gray-400">
-      <p className="text-lg">{message}</p>
+    <div className="text-center py-16">
+      <div className="inline-flex p-4 rounded-full bg-mandal-cream mb-4">
+        <span className="text-3xl opacity-40">📋</span>
+      </div>
+      <p className="text-gray-500 font-medium">{message}</p>
     </div>
   );
 }
@@ -136,15 +144,15 @@ export function Badge({
   variant?: "default" | "success" | "warning" | "danger";
 }) {
   const styles = {
-    default: "bg-gray-100 text-gray-700",
-    success: "bg-green-100 text-green-700",
-    warning: "bg-amber-100 text-amber-700",
-    danger: "bg-red-100 text-red-700",
+    default: "bg-gray-100 text-gray-700 border border-gray-200",
+    success: "bg-green-50 text-green-700 border border-green-200",
+    warning: "bg-amber-50 text-amber-700 border border-amber-200",
+    danger: "bg-red-50 text-red-700 border border-red-200",
   };
   return (
     <span
       className={cn(
-        "inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium",
+        "inline-flex px-3 py-1 rounded-full text-xs font-semibold",
         styles[variant]
       )}
     >
@@ -180,9 +188,9 @@ export function SearchableSelect({
   const selected = options.find((o) => o.id === value);
 
   return (
-    <div className="space-y-1 relative">
+    <div className="space-y-1.5 relative">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <label className="block text-sm font-semibold text-gray-700">{label}</label>
       )}
       <input
         className="input-field"
@@ -195,12 +203,12 @@ export function SearchableSelect({
         onFocus={() => setShowDropdown(true)}
       />
       {showDropdown && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-100 rounded-xl shadow-card max-h-48 overflow-y-auto">
           {filtered.map((o) => (
             <button
               key={o.id}
               type="button"
-              className="w-full text-left px-4 py-2 hover:bg-mandal-cream text-sm"
+              className="w-full text-left px-4 py-2.5 hover:bg-mandal-cream text-sm transition-colors"
               onClick={() => {
                 onChange(o.id);
                 setSearch("");
@@ -213,7 +221,7 @@ export function SearchableSelect({
           {filtered.length === 0 && search && onAddNew && (
             <button
               type="button"
-              className="w-full text-left px-4 py-2 text-mandal-saffron hover:bg-mandal-cream text-sm font-medium"
+              className="w-full text-left px-4 py-2.5 text-mandal-saffron hover:bg-mandal-cream text-sm font-semibold"
               onClick={() => {
                 setShowAddNew(true);
                 setNewName(search);
@@ -226,13 +234,11 @@ export function SearchableSelect({
         </div>
       )}
       {showAddNew && onAddNew && (
-        <div className="mt-2 p-3 bg-mandal-cream rounded-lg space-y-2">
-          <p className="text-sm text-gray-600">Adding new entry: <strong>{newName}</strong></p>
-          <Input
-            label="Mobile (optional)"
-            placeholder="Mobile number"
-            id="new-mobile"
-          />
+        <div className="mt-2 p-4 bg-mandal-cream rounded-xl space-y-3 border border-mandal-maroon/5">
+          <p className="text-sm text-gray-600">
+            Adding new entry: <strong>{newName}</strong>
+          </p>
+          <Input label="Mobile (optional)" placeholder="Mobile number" id="new-mobile" />
           <div className="flex gap-2">
             <Button
               type="button"
@@ -253,5 +259,3 @@ export function SearchableSelect({
     </div>
   );
 }
-
-import React from "react";

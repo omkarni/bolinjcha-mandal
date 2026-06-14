@@ -86,6 +86,15 @@ const userNavItems: NavItem[] = [
   { href: "/dashboard/activities", label: "Activities", icon: Trophy },
 ];
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 export function Sidebar({ userName, userRole }: { userName: string; userRole: string }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -93,25 +102,25 @@ export function Sidebar({ userName, userRole }: { userName: string; userRole: st
 
   const NavContent = () => (
     <>
-      <div className="px-4 py-6 border-b border-mandal-maroon/10">
+      <div className="px-5 py-6 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-mandal-saffron to-mandal-gold flex items-center justify-center text-white font-bold text-lg">
+          <div className="w-11 h-11 rounded-xl bg-saffron-gradient flex items-center justify-center text-white font-bold text-xl shadow-glow shrink-0">
             ॐ
           </div>
-          <div>
-            <h2 className="font-display font-bold text-mandal-maroon text-sm leading-tight">
+          <div className="min-w-0">
+            <h2 className="font-display font-bold text-white text-sm leading-tight truncate">
               Bolinjcha Vighnaharta
             </h2>
-            <p className="text-xs text-gray-500">Sarvajanik Utsav Mandal</p>
+            <p className="text-[11px] text-white/50 truncate">Sarvajanik Utsav Mandal</p>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+      <nav className="flex-1 px-3 py-5 space-y-5 overflow-y-auto">
         {isAdmin ? (
           adminNavSections.map((section) => (
             <div key={section.label}>
-              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-mandal-gold/70">
                 {section.label}
               </p>
               <div className="space-y-0.5">
@@ -140,17 +149,22 @@ export function Sidebar({ userName, userRole }: { userName: string; userRole: st
         )}
       </nav>
 
-      <div className="px-4 py-4 border-t border-mandal-maroon/10">
-        <div className="mb-3">
-          <p className="text-sm font-medium text-gray-800">{userName}</p>
-          <p className="text-xs text-gray-500 capitalize">
-            {isAdmin ? "Administrator" : "Member"}
-          </p>
+      <div className="px-4 py-4 border-t border-white/10">
+        <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-white/5 border border-white/10">
+          <div className="w-10 h-10 rounded-full bg-saffron-gradient flex items-center justify-center text-white text-sm font-bold shrink-0">
+            {getInitials(userName)}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white truncate">{userName}</p>
+            <p className="text-[11px] text-mandal-gold/80 capitalize">
+              {isAdmin ? "Administrator" : "Member"}
+            </p>
+          </div>
         </div>
         <form action={logoutAction}>
           <button
             type="submit"
-            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 transition-colors w-full"
+            className="flex items-center justify-center gap-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all w-full py-2.5 rounded-xl border border-white/10"
           >
             <LogOut size={16} />
             Logout
@@ -162,32 +176,38 @@ export function Sidebar({ userName, userRole }: { userName: string; userRole: st
 
   return (
     <>
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-mandal-maroon/10 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mandal-saffron to-mandal-gold flex items-center justify-center text-white text-sm">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-mandal-gradient border-b border-white/10 px-4 py-3 flex items-center justify-between shadow-sidebar">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-lg bg-saffron-gradient flex items-center justify-center text-white text-sm font-bold">
             ॐ
           </div>
-          <span className="font-display font-bold text-mandal-maroon text-sm">BVSM</span>
+          <span className="font-display font-bold text-white text-sm">BVSM Mandal</span>
         </div>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2">
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+        >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setMobileOpen(false)} />
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
       )}
 
       <aside
         className={cn(
-          "lg:hidden fixed top-0 left-0 z-50 h-full w-72 bg-white shadow-2xl transform transition-transform duration-300 flex flex-col",
+          "lg:hidden fixed top-0 left-0 z-50 h-full w-72 bg-mandal-gradient shadow-2xl transform transition-transform duration-300 flex flex-col",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <NavContent />
       </aside>
 
-      <aside className="hidden lg:flex fixed top-0 left-0 h-full w-64 bg-white border-r border-mandal-maroon/10 flex-col shadow-sm">
+      <aside className="hidden lg:flex fixed top-0 left-0 h-full w-[17rem] bg-mandal-gradient flex-col shadow-sidebar border-r border-white/5">
         <NavContent />
       </aside>
     </>
@@ -210,13 +230,11 @@ function NavLink({
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-        active
-          ? "bg-mandal-saffron text-white shadow-sm"
-          : "text-gray-600 hover:bg-mandal-cream-dark hover:text-mandal-maroon"
+        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+        active ? "nav-item-active" : "nav-item-inactive"
       )}
     >
-      <Icon size={17} />
+      <Icon size={17} className={active ? "text-mandal-gold-light" : ""} />
       {item.label}
     </Link>
   );
