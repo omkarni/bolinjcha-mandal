@@ -69,7 +69,8 @@ export async function loginAction(email: string, password: string) {
   const cookieStore = await cookies();
   cookieStore.set("session", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    // Only use secure cookies over HTTPS; HTTP EC2 needs COOKIE_SECURE unset/false
+    secure: process.env.COOKIE_SECURE === "true",
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7,
     path: "/",

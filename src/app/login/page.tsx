@@ -15,17 +15,22 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const form = new FormData(e.currentTarget);
-    const result = await loginAction(
-      form.get("email") as string,
-      form.get("password") as string
-    );
-    if (result.error) {
-      setError(result.error);
+    try {
+      const form = new FormData(e.currentTarget);
+      const result = await loginAction(
+        form.get("email") as string,
+        form.get("password") as string
+      );
+      if (result.error) {
+        setError(result.error);
+      } else {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    } catch {
+      setError("Login failed. Please try again.");
+    } finally {
       setLoading(false);
-    } else {
-      router.push("/dashboard");
-      router.refresh();
     }
   }
 
